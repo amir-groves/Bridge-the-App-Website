@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bridge — Meet the people already around you</title>
+  <meta name="description" content="Bridge uses proximity technology to find students near you on campus. Launching Freshers Week 2026 at the University of Bath." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── RESET ────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    ::-webkit-scrollbar { display: none; }
+
+    /* ── SIZE SYSTEM (matches reference) ──────────────── */
+    :root {
+      --sz-unit:           16;
+      --sz-ideal:          1920;
+      --sz-min:            992px;
+      --sz-max:            5200px;
+      --sz-container:      clamp(var(--sz-min), 100vw, var(--sz-max));
+      --sz-font:           calc(var(--sz-container) / (var(--sz-ideal) / var(--sz-unit)));
+
+      /* Size tokens (em multiples at root 16px) */
+      --s-32:  2em;
+      --s-48:  3em;
+      --s-56:  3.5em;
+      --s-72:  4.5em;
+      --s-96:  6em;
+      --s-128: 8em;
+      --s-160: 10em;
+      --s-224: 14em;
+
+      /* Brand Colors */
+      --blue:        #0042B9;
+      --blue-sky:    #3A7FFF;
+      --blue-tint:   #E8EFFF;
+      --navy:        #001F5C;
+
+      /* Backgrounds */
+      --bg:          #F5F7FA;
+      --bg-2:        #E8EFFF;
+
+      /* Dark */
+      --dark:        #0D0D0D;
+      --dark-2:      #001F5C;
+
+      /* Text */
+      --text:        #0D0D0D;
+      --muted:       #6B7280;
+      --border:      #E5E7EB;
+
+      /* Spacing */
+      --pad: 2em;
+
+      /* Type — Inter only per brand guidelines */
+      --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Easing */
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    html {
+      font-size: var(--sz-font);
+      overscroll-behavior: none;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.3em;
+      letter-spacing: -.01em;
+      font-weight: 500;
+      font-size: calc(var(--sz-font) * 1);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ── GRAIN TEXTURE ────────────────────────────────── */
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23g)' opacity='0.038'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    /* ── NAV ──────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 0.833em var(--pad);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background .3s var(--ease), box-shadow .3s;
+    }
+
+    nav.scrolled {
+      background: rgba(0,31,92,.97);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    .nav-logo img {
+      height: 73px;
+      width: auto;
+      display: block;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2em;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.917rem;
+      font-weight: 500;
+      color: rgba(255,255,255,.75);
+      text-decoration: none;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      transition: color .2s, opacity .2s;
+    }
+
+    .nav-links a:hover { color: #fff; }
+
+    nav.scrolled .nav-links a       { color: var(--muted); }
+    nav.scrolled .nav-links a:hover { color: var(--blue); }
+
+    /* ── HERO ─────────────────────────────────────────── */
+    .hero {
+      background: var(--dark-2);
+      min-height: 100svh;
+      padding: 0 var(--pad);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4em;
+      padding: 7em 0 3em;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Ambient glow */
+    .hero-glow {
+      position: absolute;
+      pointer-events: none;
+    }
+    .hero-glow-a {
+      top: -10%; right: -5%;
+      width: 55%; aspect-ratio: 1;
+      background: radial-gradient(ellipse at center, rgba(58,127,255,.28) 0%, transparent 65%);
+      filter: blur(60px);
+    }
+    .hero-glow-b {
+      bottom: 0; left: -10%;
+      width: 45%; aspect-ratio: 1;
+      background: radial-gradient(ellipse at center, rgba(0,31,92,.95) 0%, transparent 70%);
+      filter: blur(40px);
+    }
+
+    /* Floating device */
+    .hero-device {
+      flex-shrink: 0;
+      width: 30%;
+      max-width: 340px;
+      pointer-events: none;
+      margin-right: 5cm;
+      transform: perspective(1400px) rotateY(-8deg) rotateX(4deg) rotate(-1deg);
+      filter: drop-shadow(0 60px 100px rgba(0,0,0,.85)) drop-shadow(0 8px 20px rgba(0,0,0,.55));
+    }
+
+    /* Hero content */
+    .hero-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5em;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.45);
+      margin-bottom: .75em;
+    }
+
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      flex-shrink: 0;
+      animation: dot-pulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes dot-pulse {
+      0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,.5); }
+      50%      { opacity: .7; box-shadow: 0 0 0 4px rgba(52,211,153,0); }
+    }
+
+    .hero-title {
+      display: block;
+      line-height: .82;
+      letter-spacing: -.01em;
+      color: #fff;
+    }
+
+    .hero-title .t-condensed {
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: clamp(4rem, 9vw, var(--s-128));
+      letter-spacing: -.04em;
+      display: block;
+    }
+
+    .hero-title .t-italic {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-style: italic;
+      font-size: clamp(3.5rem, 8.5vw, var(--s-128));
+      color: var(--blue-sky);
+      letter-spacing: -.04em;
+      line-height: .92;
+    }
+
+    .t-gap-row {
+      display: flex;
+      align-items: flex-end;
+      gap: .45em;
+      flex-wrap: wrap;
+      line-height: 1;
+    }
+
+    .hero-app-label {
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      font-weight: 500;
+      color: rgba(255,255,255,.38);
+      letter-spacing: .01em;
+      padding-bottom: .18em;
+    }
+
+    .hero-sub {
+      max-width: 520px;
+      margin-top: 1.5em;
+      color: rgba(255,255,255,.55);
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      line-height: 1.72;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      margin-top: 2.25em;
+      display: flex;
+      align-items: center;
+      gap: 1.5em;
+      flex-wrap: wrap;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .hero-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .75em;
+      padding: 1.1em 2.5em;
+      background: rgba(255,255,255,.45);
+      backdrop-filter: blur(32px) saturate(200%) brightness(128%);
+      -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(128%);
+      color: #0042B9;
+      font-family: var(--font-body);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      border-radius: 9999px;
+      border: 1px solid rgba(255,255,255,.5);
+      text-decoration: none;
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        /* liquid glass rim — bevel edge catches */
+        inset  3px  3px 0.5px -3.5px rgba(255,255,255,.09),
+        inset -3px -3px 0.5px -3.5px rgba(255,255,255,.85),
+        inset  1px  1px   1px  -0.5px rgba(255,255,255,.65),
+        inset -1px -1px   1px  -0.5px rgba(255,255,255,.60),
+        /* liquid glass rim — inner ambient glow */
+        inset 0 0 8px 5px rgba(255,255,255,.11),
+        inset 0 0 2px 2px rgba(255,255,255,.07),
+        /* pulse ring placeholder */
+        0 0 0 0 rgba(255,255,255,.35),
+        /* depth */
+        0 12px 40px rgba(0,0,0,.42),
+        0 3px 10px rgba(0,0,0,.22);
+      animation: cta-pulse 2.8s ease-in-out infinite;
+      transition: transform .2s var(--ease), box-shadow .2s, background .2s;
+    }
+
+    /* Lens specular for hero CTA */
+    .hero-cta-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 52%;
+      background: linear-gradient(
+        180deg,
+        rgba(255,255,255,.55) 0%,
+        rgba(255,255,255,.15) 50%,
+        rgba(255,255,255,0)   100%
+      );
+      border-radius: 9999px 9999px 40% 40% / 9999px 9999px 20% 20%;
+      pointer-events: none;
+    }
+
+    .hero-cta-btn > * { position: relative; }
+
+    .hero-cta-btn:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.60);
+      box-shadow:
+        inset  3px  3px 0.5px -3.5px rgba(255,255,255,.09),
+        inset -3px -3px 0.5px -3.5px rgba(255,255,255,.85),
+        inset  1px  1px   1px  -0.5px rgba(255,255,255,.75),
+        inset -1px -1px   1px  -0.5px rgba(255,255,255,.70),
+        inset 0 0 8px 5px rgba(255,255,255,.15),
+        inset 0 0 2px 2px rgba(255,255,255,.09),
+        0 0 0 10px rgba(255,255,255,.08),
+        0 20px 60px rgba(0,0,0,.5),
+        0 6px 16px rgba(0,0,0,.28);
+    }
+
+    .hero-cta-btn:active { transform: translateY(1px); }
+
+    .hero-cta-btn:focus-visible {
+      outline: 2px solid rgba(255,255,255,.7);
+      outline-offset: 3px;
+    }
+
+    @keyframes cta-pulse {
+      0%, 100% {
+        box-shadow:
+          inset  3px  3px 0.5px -3.5px rgba(255,255,255,.09),
+          inset -3px -3px 0.5px -3.5px rgba(255,255,255,.85),
+          inset  1px  1px   1px  -0.5px rgba(255,255,255,.65),
+          inset -1px -1px   1px  -0.5px rgba(255,255,255,.60),
+          inset 0 0 8px 5px rgba(255,255,255,.11),
+          inset 0 0 2px 2px rgba(255,255,255,.07),
+          0 0 0 0 rgba(255,255,255,.35),
+          0 12px 40px rgba(0,0,0,.42),
+          0 3px 10px rgba(0,0,0,.22);
+      }
+      50% {
+        box-shadow:
+          inset  3px  3px 0.5px -3.5px rgba(255,255,255,.09),
+          inset -3px -3px 0.5px -3.5px rgba(255,255,255,.85),
+          inset  1px  1px   1px  -0.5px rgba(255,255,255,.65),
+          inset -1px -1px   1px  -0.5px rgba(255,255,255,.60),
+          inset 0 0 8px 5px rgba(255,255,255,.11),
+          inset 0 0 2px 2px rgba(255,255,255,.07),
+          0 0 0 14px rgba(255,255,255,0),
+          0 12px 40px rgba(0,0,0,.42),
+          0 3px 10px rgba(0,0,0,.22);
+      }
+    }
+
+    .hero-cta-sub {
+      margin-top: .6em;
+      font-size: .8125rem;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .01em;
+      padding-left: .15em;
+    }
+
+    /* ── BUTTONS ──────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5em;
+      padding: .85em 1.75em;
+      font-family: var(--font-body);
+      font-size: .9375rem;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      border-radius: 9999px;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s var(--ease), box-shadow .2s, background .2s;
+    }
+
+    /* Lens-shaped specular highlight — curved bright stripe across the top */
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 58%;
+      background: linear-gradient(
+        180deg,
+        rgba(255,255,255,.55) 0%,
+        rgba(255,255,255,.18) 50%,
+        rgba(255,255,255,0)  100%
+      );
+      border-radius: 9999px 9999px 40% 40% / 9999px 9999px 20% 20%;
+      pointer-events: none;
+    }
+
+    /* Ensure text/icons sit above specular */
+    .btn > * { position: relative; }
+
+    /* Glass on dark backgrounds */
+    .btn-light {
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(52px) saturate(210%) brightness(116%);
+      -webkit-backdrop-filter: blur(52px) saturate(210%) brightness(116%);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.45);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.8),
+        inset 0 -1px 0 rgba(0,0,0,.15),
+        0 0 0 0.5px rgba(255,255,255,.12),
+        0 8px 32px rgba(0,0,0,.3),
+        0 2px 6px rgba(0,0,0,.18);
+    }
+    .btn-light:hover {
+      background: rgba(255,255,255,.22);
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.9),
+        inset 0 -1px 0 rgba(0,0,0,.15),
+        0 0 0 0.5px rgba(255,255,255,.18),
+        0 16px 48px rgba(0,0,0,.35),
+        0 4px 12px rgba(0,0,0,.2);
+    }
+    .btn-light:active { transform: translateY(0); }
+    .btn-light:focus-visible { outline: 2px solid rgba(255,255,255,.6); outline-offset: 3px; }
+
+    .btn-dark {
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(52px) saturate(210%) brightness(116%);
+      -webkit-backdrop-filter: blur(52px) saturate(210%) brightness(116%);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.45);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.8),
+        inset 0 -1px 0 rgba(0,0,0,.15),
+        0 0 0 0.5px rgba(255,255,255,.12),
+        0 8px 32px rgba(0,0,0,.3),
+        0 2px 6px rgba(0,0,0,.18);
+    }
+    .btn-dark:hover {
+      background: rgba(255,255,255,.22);
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.9),
+        inset 0 -1px 0 rgba(0,0,0,.15),
+        0 16px 48px rgba(0,0,0,.35),
+        0 4px 12px rgba(0,0,0,.2);
+    }
+    .btn-dark:active { transform: translateY(0); }
+    .btn-dark:focus-visible { outline: 2px solid rgba(255,255,255,.5); outline-offset: 3px; }
+
+    /* Glass on light backgrounds */
+    .btn-outline {
+      background: rgba(255,255,255,.42);
+      backdrop-filter: blur(48px) saturate(190%) brightness(110%);
+      -webkit-backdrop-filter: blur(48px) saturate(190%) brightness(110%);
+      color: var(--blue);
+      border: 1px solid rgba(255,255,255,.72);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,.95),
+        inset 0 -1px 0 rgba(0,0,0,.07),
+        0 4px 20px rgba(0,0,0,.08),
+        0 1px 4px rgba(0,0,0,.06);
+    }
+    .btn-outline:hover {
+      background: rgba(255,255,255,.58);
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1.5px 0 rgba(255,255,255,1),
+        inset 0 -1px 0 rgba(0,0,0,.06),
+        0 8px 28px rgba(0,0,0,.1),
+        0 2px 8px rgba(0,0,0,.07);
+    }
+    .btn-outline:active { transform: translateY(0); }
+    .btn-outline:focus-visible { outline: 2px solid rgba(0,66,185,.3); outline-offset: 3px; }
+    .btn-outline:active { transform: translateY(0); }
+    .btn-outline:focus-visible { outline: 3px solid rgba(0,66,185,.25); outline-offset: 2px; }
+
+    /* ── DIVIDER ──────────────────────────────────────── */
+    .rule {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── ABOUT ────────────────────────────────────────── */
+    .about {
+      background: var(--bg);
+      padding: 5em var(--pad) 4em;
+    }
+
+    .about-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4em;
+      align-items: start;
+    }
+
+    .about-heading {
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: clamp(2.5rem, 5vw, var(--s-72));
+      line-height: .9;
+      letter-spacing: -.04em;
+      color: var(--dark);
+      margin-bottom: .8em;
+    }
+
+    .about-body {
+      font-size: 1.0625rem;
+      color: var(--muted);
+      line-height: 1.75;
+      font-weight: 400;
+      max-width: 480px;
+    }
+
+    .about-sig {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      margin-top: 2em;
+    }
+
+    .avatar {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #1a1a1a;
+      flex-shrink: 0;
+      border: 2px solid rgba(0,0,0,.08);
+    }
+
+    .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .about-right {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+    }
+
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .75em;
+    }
+
+    .thumb {
+      aspect-ratio: 2/3;
+      border-radius: .5em;
+      overflow: hidden;
+      background: var(--blue-tint);
+      border: 1px solid var(--border);
+    }
+
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .quote-card {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-sky) 100%);
+      border-radius: .75em;
+      padding: 1.75em;
+      color: rgba(255,255,255,.85);
+      font-size: 1rem;
+      line-height: 1.65;
+      font-weight: 500;
+      font-style: italic;
+      position: relative;
+    }
+
+    .quote-card::before {
+      content: '"';
+      position: absolute;
+      top: .5em; left: 1em;
+      font-family: var(--font-body);
+      font-size: 4em;
+      font-weight: 800;
+      color: rgba(255,255,255,.15);
+      line-height: 1;
+    }
+
+    /* ── WORK / APP PREVIEW ───────────────────────────── */
+    .preview {
+      background: var(--bg);
+      padding: 0 var(--pad) 5em;
+    }
+
+    .preview-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .preview-frame {
+      background: var(--dark-2);
+      border-radius: 1.25em;
+      overflow: hidden;
+      position: relative;
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2em;
+      border: 1px solid rgba(255,255,255,.04);
+    }
+
+    .preview-tag {
+      position: absolute;
+      top: 1.25em; left: 1.25em;
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 2em;
+      padding: .35em 1em;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.5);
+    }
+
+    /* Phone mockups */
+    .phones {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5em;
+      padding: 3em 2em;
+    }
+
+    .phone {
+      width: 180px;
+      background: #0a0a0a;
+      border-radius: 2.5em;
+      padding: .875em;
+      border: 1.5px solid rgba(255,255,255,.08);
+      box-shadow:
+        0 60px 120px rgba(0,0,0,.9),
+        0 16px 40px rgba(0,0,0,.6),
+        inset 0 1px 0 rgba(255,255,255,.06);
+      flex-shrink: 0;
+    }
+
+    .phone-screen {
+      background: #111;
+      border-radius: 1.75em;
+      overflow: hidden;
+    }
+
+    .phone:nth-child(2) { margin-top: 2.5em; }
+
+    .cta-display {
+      display: inline-flex;
+      align-items: center;
+      gap: .35em;
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: clamp(2rem, 4vw, var(--s-56));
+      color: var(--blue);
+      text-decoration: none;
+      line-height: .9;
+      letter-spacing: -.04em;
+      transition: color .2s var(--ease), opacity .2s var(--ease);
+    }
+
+    .cta-display:hover { color: var(--blue-sky); opacity: 1; }
+    .cta-display:focus-visible { outline: 2px solid rgba(0,0,0,.3); outline-offset: 4px; border-radius: 2px; }
+
+    /* ── PROCESS (dark) ───────────────────────────────── */
+    .process {
+      background: var(--dark-2);
+      padding: 5em var(--pad) 6em;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .process-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .process-eyebrow {
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: clamp(3rem, 6vw, var(--s-72));
+      color: rgba(255,255,255,.12);
+      letter-spacing: -.04em;
+      line-height: .85;
+      margin-bottom: 1.5em;
+    }
+
+    .process-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2em;
+    }
+
+    .process-col {
+      border-top: 1px solid rgba(58,127,255,.2);
+      padding-top: 2em;
+    }
+
+    .col-icon {
+      width: 2.25em; height: 2.25em;
+      margin-bottom: 1.5em;
+      opacity: .5;
+    }
+
+    .col-num {
+      font-size: .9rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.2);
+      margin-bottom: .625em;
+    }
+
+    .col-title {
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: clamp(2rem, 3vw, var(--s-48));
+      color: #fff;
+      line-height: .9;
+      letter-spacing: -.04em;
+      margin-bottom: .75em;
+    }
+
+    .col-body {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,.38);
+      line-height: 1.68;
+      font-weight: 400;
+      max-width: 300px;
+    }
+
+    /* ── PROCESS ANIMATIONS ──────────────────────────── */
+    .col-anim {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 1.75em;
+      border-radius: .875em;
+      background: rgba(58,127,255,.07);
+      overflow: hidden;
+    }
+
+    /* Crossed Paths */
+    .cp-a { animation: cp-a 3.4s ease-in-out infinite; }
+    .cp-b { animation: cp-b 3.4s ease-in-out infinite; }
+    @keyframes cp-a {
+      0%   { transform: translateX(0); }
+      46%  { transform: translateX(116px); }
+      54%  { transform: translateX(124px); }
+      100% { transform: translateX(242px); }
+    }
+    @keyframes cp-b {
+      0%   { transform: translateX(0); }
+      46%  { transform: translateX(-124px); }
+      54%  { transform: translateX(-116px); }
+      100% { transform: translateX(-242px); }
+    }
+    .cp-glow { animation: cp-fade 3.4s ease-in-out infinite; opacity: 0; }
+    @keyframes cp-fade {
+      0%,38%,70%,100% { opacity: 0; }
+      46%,56%         { opacity: 1; }
+    }
+
+    /* Broadcasts */
+    .bc-r1,.bc-r2,.bc-r3 { transform-box: fill-box; transform-origin: center; }
+    .bc-r1 { animation: bc-ring 2.2s ease-out infinite 0s; }
+    .bc-r2 { animation: bc-ring 2.2s ease-out infinite .73s; }
+    .bc-r3 { animation: bc-ring 2.2s ease-out infinite 1.47s; }
+    @keyframes bc-ring {
+      0%   { transform: scale(0); opacity: .7; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+    .bc-d1 { animation: bc-recv 2.2s ease-out infinite .55s; }
+    .bc-d2 { animation: bc-recv 2.2s ease-out infinite .73s; }
+    .bc-d3 { animation: bc-recv 2.2s ease-out infinite .64s; }
+    .bc-d4 { animation: bc-recv 2.2s ease-out infinite .82s; }
+    @keyframes bc-recv {
+      0%,50%   { opacity: .2; }
+      60%,80%  { opacity: 1; }
+      90%,100% { opacity: .2; }
+    }
+
+    /* People Finder */
+    .pf-scan {
+      animation: pf-scan 3.6s ease-in-out infinite;
+      opacity: 0;
+    }
+    @keyframes pf-scan {
+      0%,5%   { transform: translateY(0);   opacity: 0; }
+      10%     { opacity: 1; }
+      25%,33% { transform: translateY(0); }
+      39%,47% { transform: translateY(34px); }
+      55%,63% { transform: translateY(68px); }
+      80%     { opacity: 1; }
+      88%,100%{ opacity: 0; }
+    }
+    .pf-match {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pf-match 3.6s ease-in-out infinite;
+      opacity: 0;
+    }
+    @keyframes pf-match {
+      0%,60%  { opacity: 0; transform: scale(.4); }
+      70%,82% { opacity: 1; transform: scale(1); }
+      88%,100%{ opacity: 0; transform: scale(.4); }
+    }
+
+    /* ── WAITLIST ─────────────────────────────────────── */
+    .waitlist {
+      background: var(--bg);
+      padding: 3.5em var(--pad) 6em;
+    }
+
+    .waitlist-inner {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .waitlist-logo {
+      height: 72px;
+      width: auto;
+      display: block;
+      margin-bottom: 1.5em;
+    }
+
+    .waitlist-heading {
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: clamp(3.5rem, 7vw, var(--s-96));
+      line-height: .88;
+      letter-spacing: -.04em;
+      color: var(--dark);
+      margin-bottom: .6em;
+    }
+
+    .waitlist-sub {
+      font-size: 1.0625rem;
+      color: var(--muted);
+      line-height: 1.72;
+      font-weight: 400;
+      max-width: 500px;
+      margin-bottom: 2.5em;
+    }
+
+    .wl-form {
+      display: flex;
+      gap: .75em;
+      flex-wrap: wrap;
+      margin-bottom: .875em;
+    }
+
+    .wl-input {
+      flex: 1;
+      min-width: 220px;
+      padding: .9em 1.25em;
+      background: rgba(0,0,0,.04);
+      border: 1.5px solid rgba(0,0,0,.12);
+      border-radius: .375em;
+      font-family: var(--font-body);
+      font-size: .9375rem;
+      font-weight: 500;
+      color: var(--dark);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .wl-input::placeholder { color: rgba(0,0,0,.28); }
+    .wl-input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,66,185,.12);
+    }
+
+    .wl-note {
+      font-size: .8125rem;
+      color: rgba(0,0,0,.3);
+      letter-spacing: .01em;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .wl-success {
+      display: none;
+      align-items: center;
+      gap: .75em;
+      padding: 1em 1.5em;
+      background: rgba(0,0,0,.05);
+      border-radius: .375em;
+      font-size: .9375rem;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: .875em;
+    }
+
+    .social-row {
+      margin-top: 3em;
+      padding-top: 2em;
+      border-top: 1px solid var(--border);
+    }
+
+    .social-label {
+      font-size: .875rem;
+      color: var(--muted);
+      margin-bottom: 1em;
+    }
+
+    /* ── FOOTER ───────────────────────────────────────── */
+    footer {
+      background: var(--dark);
+      padding: 1.75em var(--pad);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1em;
+      flex-wrap: wrap;
+    }
+
+    .footer-logo img {
+      height: 36px;
+      width: auto;
+      display: block;
+      opacity: .65;
+    }
+
+    .footer-copy {
+      font-size: .78rem;
+      color: rgba(255,255,255,.2);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.25em;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: .78rem;
+      color: rgba(255,255,255,.28);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,.65); }
+
+    /* ── REVEAL ───────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity .72s var(--ease), transform .72s var(--ease);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .rd1 { transition-delay: .10s; }
+    .rd2 { transition-delay: .22s; }
+    .rd3 { transition-delay: .34s; }
+
+    /* ── TESTIMONIALS ────────────────────────────────── */
+    .testimonials {
+      background: var(--bg);
+      padding: 6em var(--pad) 3.5em;
+      text-align: center;
+    }
+
+    .testimonials-inner {
+      max-width: 660px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.75em;
+    }
+
+    .testimonials-eyebrow {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--blue-sky);
+    }
+
+    .testimonials-quote-wrap {
+      position: relative;
+      padding: 0 1.5em;
+    }
+
+    .testimonials-qmark {
+      position: absolute;
+      font-size: 7rem;
+      font-weight: 800;
+      line-height: 1;
+      color: rgba(0,0,0,.045);
+      user-select: none;
+      pointer-events: none;
+      font-family: Georgia, serif;
+    }
+    .testimonials-qmark-open  { left: -.25em; top: -.55em; }
+    .testimonials-qmark-close { right: -.25em; bottom: -1em; }
+
+    .testimonials-quote {
+      font-size: clamp(1.5rem, 2.8vw, 2.25rem);
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--dark);
+      transition: opacity .22s ease-out, filter .22s ease-out, transform .22s ease-out;
+    }
+    .testimonials-quote.is-out {
+      opacity: 0;
+      filter: blur(5px);
+      transform: scale(.985);
+    }
+
+    .testimonials-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5em;
+    }
+
+    .testimonials-role {
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: opacity .32s ease-out, transform .32s ease-out;
+    }
+    .testimonials-role.is-out {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    .testimonials-avatars {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4em;
+    }
+
+    .testimonials-avatar-btn {
+      display: inline-flex;
+      align-items: center;
+      border: none;
+      background: transparent;
+      border-radius: 9999px;
+      cursor: pointer;
+      padding: .45em 1.1em;
+      font-family: var(--font-body);
+      font-size: .8125rem;
+      font-weight: 600;
+      color: var(--muted);
+      transition:
+        background .35s cubic-bezier(.4,0,.2,1),
+        color      .35s cubic-bezier(.4,0,.2,1),
+        box-shadow .35s cubic-bezier(.4,0,.2,1);
+    }
+    .testimonials-avatar-btn.is-active {
+      background: var(--dark);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    }
+    .testimonials-avatar-btn:not(.is-active):hover {
+      background: rgba(0,0,0,.07);
+      color: var(--dark);
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────────── */
+    @media (max-width: 860px) {
+      .hero-device  { display: none; }
+      .about-inner  { grid-template-columns: 1fr; }
+      .process-cols { grid-template-columns: 1fr; }
+      .thumb-grid   { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 520px) {
+      .nav-links { display: none; }
+      .phones    { flex-direction: column; align-items: center; }
+      .phone:nth-child(2) { margin-top: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════ -->
+<nav aria-label="Main navigation">
+  <a href="#" class="nav-logo" aria-label="Bridge home">
+    <img src="brand_assets/WHITE_TRANSPARENT.png" alt="Bridge" />
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#process">How it works</a></li>
+    <li><a href="https://apps.apple.com/gb/app/bridge-connect-with-students/id6752128210" target="_blank" rel="noopener noreferrer">Download</a></li>
+  </ul>
+</nav>
+
+
+<!-- ════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="grain" aria-hidden="true"></div>
+  <div class="hero-glow hero-glow-a" aria-hidden="true"></div>
+  <div class="hero-glow hero-glow-b" aria-hidden="true"></div>
+
+  <!-- Repeating watermark logos -->
+  <div aria-hidden="true" style="
+    position: absolute;
+    inset: 0;
+    background-image: url('brand_assets/BLUE_TRANSPARENT.png');
+    background-repeat: repeat;
+    background-size: 130px 130px;
+    opacity: 0.055;
+    filter: brightness(10);
+    pointer-events: none;
+    user-select: none;
+  "></div>
+
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="dot" aria-hidden="true"></span>
+        Launching Freshers Week 2026 &nbsp;·&nbsp; University of Bath
+      </div>
+
+      <h1 class="hero-title">
+        <span class="t-condensed">BRIDGE THE</span>
+        <span class="t-italic">gap.</span>
+      </h1>
+
+      <p class="hero-sub">
+        Bridge uses proximity technology to help students meet the right people — people they've actually been near, or who share their courses, interests, and goals. Built for real university life.
+      </p>
+
+      <div class="hero-actions">
+        <div class="hero-cta">
+          <a href="https://apps.apple.com/gb/app/bridge-connect-with-students/id6752128210" target="_blank" rel="noopener noreferrer" class="hero-cta-btn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Download Now
+          </a>
+          <p class="hero-cta-sub">Free on the App Store · iOS</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone mockup -->
+    <div class="hero-device" aria-hidden="true">
+      <div style="background:#0a0a0a; border-radius:3em; padding:1em; border:1.5px solid rgba(255,255,255,.1); box-shadow:inset 0 1px 0 rgba(255,255,255,.07);">
+        <div style="display:flex; justify-content:center; margin-bottom:.55em;">
+          <div style="width:80px; height:24px; background:#000; border-radius:12px;"></div>
+        </div>
+        <div style="background:#111; border-radius:2.25em; overflow:hidden;">
+          <img src="brand_assets/IMG_5663.JPG" alt="Bridge app" style="width:100%; display:block;" />
+        </div>
+        <div style="display:flex; justify-content:center; margin-top:.55em;">
+          <div style="width:88px; height:4px; background:rgba(255,255,255,.25); border-radius:2px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     ABOUT
+════════════════════════════════════════════════ -->
+<section class="about" id="about">
+  <div class="about-inner">
+
+    <div>
+      <h2 class="about-heading reveal">MEET THE PEOPLE NEAR YOU</h2>
+      <p class="about-body reveal rd1">
+        The best student connections start in the real world — lectures, the library, societies, the gym, cafés, events. But students often miss the moment. Bridge turns those missed encounters into real relationships, and makes it easier to organise university life without relying on fragmented group chats.
+      </p>
+    </div>
+
+    <div class="about-right reveal rd1">
+      <div class="thumb-grid">
+        <div class="thumb"><img src="brand_assets/IMG_5531.JPG" alt="Bridge students on campus in Bath" /></div>
+        <div class="thumb"><img src="brand_assets/campus-activation.JPG" alt="Bridge campus activation with merch" /></div>
+        <div class="thumb" style="background:#0042B9;"><img src="brand_assets/WHITE_TRANSPARENT.png" alt="Bridge" style="width:100%;height:100%;object-fit:contain;padding:1em;" /></div>
+      </div>
+      <div class="quote-card">
+        You see the same faces every day. You just never meet them.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="rule" style="max-width:1280px; margin:0 auto;" />
+
+
+<!-- ════════════════════════════════════════════════
+     APP PREVIEW
+════════════════════════════════════════════════ -->
+<section class="preview">
+  <div class="preview-inner">
+    <div class="preview-frame reveal">
+      <span class="preview-tag">People Finder · Crossed Paths · Live on iOS</span>
+
+      <!-- Phone mockups side by side -->
+      <div class="phones">
+
+        <!-- Phone 1: People Finder -->
+        <div class="phone">
+          <div class="phone-screen">
+            <img src="brand_assets/IMG_5663.JPG" alt="Bridge People Finder screen" style="width:100%;display:block;" />
+          </div>
+        </div>
+
+        <!-- Phone 2: Crossed Paths -->
+        <div class="phone">
+          <div class="phone-screen">
+            <img src="brand_assets/IMG_6431.PNG" alt="Bridge Crossed Paths screen" style="width:100%;display:block;" />
+          </div>
+        </div>
+
+        <!-- Phone 3: Micro Map -->
+        <div class="phone">
+          <div class="phone-screen">
+            <img src="brand_assets/IMG_6433.PNG" alt="Bridge Micro Map screen" style="width:100%;display:block;" />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="reveal">
+      <a href="https://apps.apple.com/gb/app/bridge-connect-with-students/id6752128210" target="_blank" rel="noopener noreferrer" class="cta-display">
+        DOWNLOAD NOW
+        <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M7 7h10v10"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     PROCESS (dark)
+════════════════════════════════════════════════ -->
+<section class="process" id="process">
+  <div class="grain" aria-hidden="true"></div>
+  <div class="process-inner">
+
+    <div class="process-eyebrow reveal">HOW IT WORKS</div>
+
+    <div class="process-cols">
+
+      <div class="process-col reveal">
+        <!-- Radar / connect icon -->
+        <div class="col-anim" aria-hidden="true">
+          <svg viewBox="0 0 300 150" width="100%" height="100%" fill="none">
+            <line x1="22" y1="67" x2="278" y2="67" stroke="rgba(255,255,255,.05)" stroke-width="1" stroke-dasharray="3 5"/>
+            <!-- Person A (blue, moves left→right) -->
+            <g class="cp-a">
+              <circle cx="28" cy="54" r="11" fill="#3A7FFF"/>
+              <rect x="17" y="65" width="22" height="20" rx="11" fill="#3A7FFF"/>
+            </g>
+            <!-- Person B (white, moves right→left) -->
+            <g class="cp-b">
+              <circle cx="272" cy="54" r="11" fill="rgba(255,255,255,.65)"/>
+              <rect x="261" y="65" width="22" height="20" rx="11" fill="rgba(255,255,255,.65)"/>
+            </g>
+            <!-- Glow at crossing -->
+            <circle cx="150" cy="63" r="28" fill="rgba(58,127,255,.18)" class="cp-glow"/>
+            <circle cx="150" cy="63" r="13" fill="rgba(58,127,255,.45)" class="cp-glow"/>
+            <text x="150" y="120" text-anchor="middle" fill="rgba(58,127,255,.9)" font-family="Inter,sans-serif" font-size="9" font-weight="700" letter-spacing="2" class="cp-glow">CROSSED PATHS</text>
+          </svg>
+        </div>
+        <p class="col-num">01</p>
+        <h3 class="col-title">CROSSED PATHS</h3>
+        <p class="col-body">Proximity tech detects when you've been near another student — in a lecture, the library, or anywhere on campus. Connect afterwards, even if you didn't speak in the moment.</p>
+      </div>
+
+      <div class="process-col reveal rd1">
+        <!-- Filter / match icon -->
+        <div class="col-anim" aria-hidden="true">
+          <svg viewBox="0 0 300 150" width="100%" height="100%" fill="none">
+            <!-- Expanding rings -->
+            <circle cx="150" cy="68" r="42"  stroke="rgba(58,127,255,.65)" stroke-width="1.5" class="bc-r1"/>
+            <circle cx="150" cy="68" r="72"  stroke="rgba(58,127,255,.65)" stroke-width="1.5" class="bc-r2"/>
+            <circle cx="150" cy="68" r="102" stroke="rgba(58,127,255,.65)" stroke-width="1.5" class="bc-r3"/>
+            <!-- Centre person -->
+            <circle cx="150" cy="55" r="12" fill="#3A7FFF"/>
+            <rect x="137" y="67" width="26" height="22" rx="13" fill="#3A7FFF"/>
+            <!-- Receivers: top, right, bottom, left -->
+            <g class="bc-d1" style="opacity:.2"><circle cx="150" cy="10" r="7" fill="rgba(255,255,255,.8)"/><rect x="143" y="17" width="14" height="13" rx="7" fill="rgba(255,255,255,.8)"/></g>
+            <g class="bc-d2" style="opacity:.2"><circle cx="283" cy="60" r="7" fill="rgba(255,255,255,.8)"/><rect x="276" y="67" width="14" height="13" rx="7" fill="rgba(255,255,255,.8)"/></g>
+            <g class="bc-d3" style="opacity:.2"><circle cx="150" cy="128" r="7" fill="rgba(255,255,255,.8)"/><rect x="143" y="135" width="14" height="13" rx="7" fill="rgba(255,255,255,.8)"/></g>
+            <g class="bc-d4" style="opacity:.2"><circle cx="17"  cy="60" r="7" fill="rgba(255,255,255,.8)"/><rect x="10"  y="67" width="14" height="13" rx="7" fill="rgba(255,255,255,.8)"/></g>
+          </svg>
+        </div>
+        <p class="col-num">02</p>
+        <h3 class="col-title">BROADCASTS</h3>
+        <p class="col-body">Send a real-time message to the student community around you. Organise a study session, find event partners, or recruit teammates — no group chat needed.</p>
+      </div>
+
+      <div class="process-col reveal rd2">
+        <!-- Meet / people icon -->
+        <div class="col-anim" aria-hidden="true">
+          <svg viewBox="0 0 300 150" width="100%" height="100%" fill="none">
+            <!-- Search bar -->
+            <rect x="14" y="8" width="272" height="22" rx="6" fill="rgba(255,255,255,.07)" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+            <circle cx="27" cy="19" r="5" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+            <line x1="31" y1="23" x2="35" y2="27" stroke="rgba(255,255,255,.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="42" y="16" width="90" height="5" rx="2.5" fill="rgba(255,255,255,.15)"/>
+            <!-- Row 1 -->
+            <rect x="14" y="36" width="272" height="28" rx="5" fill="rgba(255,255,255,.04)"/>
+            <circle cx="32" cy="50" r="8" fill="rgba(255,255,255,.18)"/>
+            <rect x="46" y="46" width="110" height="5" rx="2.5" fill="rgba(255,255,255,.18)"/>
+            <rect x="46" y="55" width="70"  height="4" rx="2"   fill="rgba(255,255,255,.1)"/>
+            <!-- Row 2 -->
+            <rect x="14" y="70" width="272" height="28" rx="5" fill="rgba(255,255,255,.04)"/>
+            <circle cx="32" cy="84" r="8" fill="rgba(255,255,255,.18)"/>
+            <rect x="46" y="80" width="85"  height="5" rx="2.5" fill="rgba(255,255,255,.18)"/>
+            <rect x="46" y="89" width="55"  height="4" rx="2"   fill="rgba(255,255,255,.1)"/>
+            <!-- Row 3 -->
+            <rect x="14" y="104" width="272" height="28" rx="5" fill="rgba(255,255,255,.04)"/>
+            <circle cx="32" cy="118" r="8" fill="rgba(255,255,255,.18)"/>
+            <rect x="46" y="114" width="95" height="5" rx="2.5" fill="rgba(255,255,255,.18)"/>
+            <rect x="46" y="123" width="62" height="4" rx="2"   fill="rgba(255,255,255,.1)"/>
+            <!-- Scanner highlight -->
+            <rect x="14" y="36" width="272" height="28" rx="5" fill="rgba(58,127,255,.15)" stroke="rgba(58,127,255,.7)" stroke-width="1.5" class="pf-scan"/>
+            <!-- Match badge (row 3) -->
+            <g class="pf-match">
+              <circle cx="268" cy="118" r="11" fill="#3A7FFF"/>
+              <path d="M263 118 L267 122 L274 112" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </svg>
+        </div>
+        <p class="col-num">03</p>
+        <h3 class="col-title">PEOPLE FINDER</h3>
+        <p class="col-body">Search for students by course, interests, and goals. Find a study partner for a specific module, a collaborator for a project, or simply meet like-minded people outside your flat or course group.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     TESTIMONIALS
+════════════════════════════════════════════════ -->
+<section class="testimonials" id="testimonials">
+  <div class="testimonials-inner">
+
+    <p class="testimonials-eyebrow reveal">What students say</p>
+
+    <div class="testimonials-quote-wrap reveal rd1">
+      <span class="testimonials-qmark testimonials-qmark-open" aria-hidden="true">"</span>
+      <p class="testimonials-quote" id="tQuote">I found my study group through Bridge. One crossed path in the library led to three of my closest friends at uni.</p>
+      <span class="testimonials-qmark testimonials-qmark-close" aria-hidden="true">"</span>
+    </div>
+
+    <div class="testimonials-meta reveal rd2">
+      <p class="testimonials-role" id="tRole">International Management  ·  1st Year</p>
+      <div class="testimonials-avatars" id="tAvatars">
+        <!-- built by JS -->
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     DOWNLOAD
+════════════════════════════════════════════════ -->
+<section class="waitlist" id="download">
+  <div class="waitlist-inner">
+
+    <div class="reveal">
+      <img src="brand_assets/BLUE_TRANSPARENT.png" alt="Bridge" class="waitlist-logo" />
+      <h2 class="waitlist-heading">AVAILABLE<br />NOW.</h2>
+      <p class="waitlist-sub">
+        Bridge is live on iOS. Find study partners, make real friends, and build community — the way it was always meant to happen.
+      </p>
+    </div>
+
+    <div class="reveal rd1" style="display:flex; justify-content:center;">
+      <a href="https://apps.apple.com/gb/app/bridge-connect-with-students/id6752128210" target="_blank" rel="noopener noreferrer" class="hero-cta-btn" style="animation:none;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        Download Now
+      </a>
+    </div>
+
+    <p class="wl-note reveal rd2">Free to download &nbsp;·&nbsp; iOS only &nbsp;·&nbsp; UK universities</p>
+
+    <div class="social-row reveal rd3">
+      <p class="social-label">Follow our journey</p>
+      <a href="https://instagram.com/bridge.app" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <circle cx="12" cy="12" r="5"/>
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        @bridge.app
+      </a>
+      <a href="https://www.tiktok.com/@bridgeapp?_r=1&_t=ZS-96lS5yhGOiT" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.2 8.2 0 0 0 4.79 1.53V6.85a4.85 4.85 0 0 1-1.02-.16z"/>
+        </svg>
+        @bridgeapp
+      </a>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-logo">
+    <img src="brand_assets/WHITE_TRANSPARENT.png" alt="Bridge" />
+  </div>
+  <p class="footer-copy">© 2026 Bridge &nbsp;·&nbsp; University of Bath &nbsp;·&nbsp; Available now on iOS</p>
+  <ul class="footer-links">
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Terms</a></li>
+    <li><a href="mailto:hello@bridgeapp.co.uk">Contact</a></li>
+  </ul>
+</footer>
+
+
+<script>
+  // Nav scroll state — swap white ↔ blue logo
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > window.innerHeight * 0.8);
+  }, { passive: true });
+
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.07, rootMargin: '0px 0px -36px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Testimonials
+  (function() {
+    const data = [
+      {
+        quote: "I found my study group through Bridge. One crossed path in the library led to three of my closest friends at uni.",
+        author: "Yasmin",
+        role: "International Management  ·  1st Year"
+      },
+      {
+        quote: "I broadcast for a dissertation partner. Within ten minutes I had five replies from people on my exact module.",
+        author: "Alex",
+        role: "Civil Engineering  ·  2nd Year"
+      },
+      {
+        quote: "Bridge is everything Freshers' Week should be — it connects you with the people already around you.",
+        author: "Lucas",
+        role: "Politics with Economics  ·  3rd Year"
+      }
+    ];
+
+    let active = 0;
+    let busy = false;
+    const quoteEl = document.getElementById('tQuote');
+    const roleEl  = document.getElementById('tRole');
+    const wrap    = document.getElementById('tAvatars');
+
+    function buildAvatars() {
+      wrap.innerHTML = '';
+      data.forEach((t, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'testimonials-avatar-btn' + (i === 0 ? ' is-active' : '');
+        btn.textContent = t.author;
+        btn.addEventListener('click', () => select(i));
+        wrap.appendChild(btn);
+      });
+    }
+
+    function select(index) {
+      if (index === active || busy) return;
+      busy = true;
+      quoteEl.classList.add('is-out');
+      roleEl.classList.add('is-out');
+      setTimeout(function() {
+        quoteEl.textContent = data[index].quote;
+        roleEl.textContent  = data[index].role;
+        const btns = wrap.querySelectorAll('.testimonials-avatar-btn');
+        btns[active].classList.remove('is-active');
+        btns[index].classList.add('is-active');
+        active = index;
+        requestAnimationFrame(function() {
+          quoteEl.classList.remove('is-out');
+          roleEl.classList.remove('is-out');
+          setTimeout(function() { busy = false; }, 380);
+        });
+      }, 200);
+    }
+
+    buildAvatars();
+  })();
+
+  // Waitlist form
+  function handleWaitlist(e) {
+    e.preventDefault();
+    const form = document.getElementById('wl-form');
+    const success = document.getElementById('wl-success');
+    form.style.display = 'none';
+    success.style.display = 'flex';
+    success.classList.add('visible');
+  }
+</script>
+</body>
+</html>
